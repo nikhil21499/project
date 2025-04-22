@@ -6,8 +6,9 @@ from langchain.vectorstores import FAISS
 from langchain.chains import RetrievalQA
 from langchain.llms import OpenAI
 import os
+import numpy as np
 
-# Set OpenAI API key
+# Set OpenAI API key from Streamlit secrets or environment
 openai_api_key = os.getenv("OPENAI_API_KEY")
 
 # Set Streamlit page configuration
@@ -40,7 +41,12 @@ def get_answer(texts, question):
         # Use SentenceTransformer to get embeddings
         model = SentenceTransformer('all-MiniLM-L6-v2')
         embeddings = model.encode(texts)
+        embeddings = np.array(embeddings)  # Ensure it's a numpy array
+
+        # Store embeddings in FAISS
         retriever = FAISS.from_texts(texts, embeddings).as_retriever()
+
+        # Create QA chain using OpenAI
         qa_chain = RetrievalQA.from_chain_type(llm=OpenAI(api_key=openai_api_key, temperature=0), retriever=retriever)
         return qa_chain.run(question)
     except Exception as e:
@@ -55,6 +61,7 @@ if st.button("Ingest & Answer"):
         with st.spinner("Scraping and processing content..."):
             docs = [extract_text_from_url(url) for url in urls if url.strip()]
             docs = [doc for doc in docs if doc]  # Filter out empty strings
+
             if docs:
                 answer = get_answer(docs, question)
                 st.success("Done!")
