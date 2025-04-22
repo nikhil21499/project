@@ -1,7 +1,7 @@
 import streamlit as st
 import requests
 from bs4 import BeautifulSoup
-from langchain.embeddings import HuggingFaceEmbeddings
+from sentence_transformers import SentenceTransformer
 from langchain.vectorstores import FAISS
 from langchain.chains import RetrievalQA
 from langchain.llms import OpenAI
@@ -37,7 +37,9 @@ def extract_text_from_url(url):
 # Get the answer to the question using Langchain and OpenAI
 def get_answer(texts, question):
     try:
-        embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
+        # Use SentenceTransformer to get embeddings
+        model = SentenceTransformer('all-MiniLM-L6-v2')
+        embeddings = model.encode(texts)
         retriever = FAISS.from_texts(texts, embeddings).as_retriever()
         qa_chain = RetrievalQA.from_chain_type(llm=OpenAI(api_key=openai_api_key, temperature=0), retriever=retriever)
         return qa_chain.run(question)
